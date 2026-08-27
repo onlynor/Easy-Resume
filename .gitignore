@@ -1,0 +1,6 @@
+# 根目录的 resume.pdf 是主模板成品，保留；code/examples/ 下的示例产物也保留；
+# 其余散落的 .pdf/.png（编辑器自动预览、调试截图等）忽略。
+*.pdf
+!resume.pdf
+!code/examples/**/*.pdf
+*.png
