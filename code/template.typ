@@ -18,11 +18,22 @@
 
 // 主风格 · 单栏高密度
 
+// 字体候选表：每项是一串字族名，Typst 按顺序取第一个装得上的。
+// 浏览器版（web/ 在线编辑器）用 `--input easy-resume-web=1` 编译，那边装的是
+// Noto Serif SC / Noto Sans SC 这套 Web 字体，字族名和本机的 Noto CJK 不同，
+// 所以只在这种情况下多挂一层回退；命令行本机编译时候选表保持原样，
+// 免得 typst 对没装的字体一路刷 "unknown font family" 警告。
+#let web-only(..names) = if sys.inputs.at("easy-resume-web", default: "") == "1" {
+  names.pos()
+} else {
+  ()
+}
+
 #let font = (
-  body: "Liberation Serif", // Times New Roman 的免费替代字体
-  cjk: "Noto Serif CJK SC",
-  heading: "Noto Sans CJK SC",
-  mono: "Noto Sans Mono",
+  body: ("Liberation Serif", ..web-only("Libertinus Serif")), // Times New Roman 的免费替代字体
+  cjk: ("Noto Serif CJK SC", ..web-only("Noto Serif SC")),
+  heading: ("Noto Sans CJK SC", ..web-only("Noto Sans SC")),
+  mono: ("Noto Sans Mono", ..web-only("DejaVu Sans Mono")),
 )
 
 #let palette = (
@@ -47,7 +58,7 @@
 ) = {
   set document(title: name + " 简历")
   set page(paper: "a4", margin: margin, numbering: none)
-  set text(font: (font.body, font.cjk), size: size, fill: palette.text, lang: "zh")
+  set text(font: (..font.body, ..font.cjk), size: size, fill: palette.text, lang: "zh")
   set par(justify: true, leading: 0.55em)
   accent-state.update(accent)
 
@@ -55,7 +66,7 @@
   show heading: it => context {
     let ac = accent-state.get()
     v(0.3em)
-    text(font: (font.heading, font.cjk), fill: ac, size: 1.42em, weight: "bold")[#it.body]
+    text(font: (..font.heading, ..font.cjk), fill: ac, size: 1.42em, weight: "bold")[#it.body]
     v(0.1em)
     line(length: 100%, stroke: 1.4pt + ac)
     v(0.16em)
@@ -67,7 +78,7 @@
     column-gutter: 0.8cm,
     align: top,
     [
-      #text(font: (font.heading, font.cjk), size: 2.05em, weight: "bold")[#name]
+      #text(font: (..font.heading, ..font.cjk), size: 2.05em, weight: "bold")[#name]
       #v(0.15em)
       #for line in meta [
         #box({
@@ -139,7 +150,7 @@
 ]
 
 #let code(body) = box(fill: palette.band, inset: (x: 0.2em), radius: 1.5pt)[
-  #text(font: (font.mono, font.cjk), size: 0.88em)[#body]
+  #text(font: (..font.mono, ..font.cjk), size: 0.88em)[#body]
 ]
 
 #let muted(body) = text(fill: palette.muted)[#body]
@@ -164,9 +175,9 @@
 // 侧栏卡片风格（当前 resumes/*.typ 未使用，保留供需要更强调"技能可视化"的场景切换）
 
 #let sidebar-font = (
-  main: "Noto Sans",
-  cjk: "Noto Sans CJK SC",
-  mono: "Noto Sans Mono",
+  main: ("Noto Sans", ..web-only("Noto Sans SC")),
+  cjk: ("Noto Sans CJK SC", ..web-only("Noto Sans SC")),
+  mono: ("Noto Sans Mono", ..web-only("DejaVu Sans Mono")),
 )
 
 #let sidebar-palette = (
@@ -206,7 +217,7 @@
     column-gutter: 1em,
     align: horizon,
     [
-      #text(fill: sidebar-palette.ink, size: 2.1em, weight: "bold", font: (sidebar-font.main, sidebar-font.cjk))[#name]
+      #text(fill: sidebar-palette.ink, size: 2.1em, weight: "bold", font: (..sidebar-font.main, ..sidebar-font.cjk))[#name]
       #if title != "" [
         #v(0.15em)
         #box(fill: accent.lighten(85%), inset: (x: 0.55em, y: 0.32em), radius: 2pt)[
@@ -219,7 +230,7 @@
 
   v(0.65em)
 
-  set text(font: (sidebar-font.main, sidebar-font.cjk), size: 0.88em, fill: sidebar-palette.muted)
+  set text(font: (..sidebar-font.main, ..sidebar-font.cjk), size: 0.88em, fill: sidebar-palette.muted)
   let pieces = contacts.map(c => {
     box({
       if "icon" in c { svg-icon(c.icon, fill: accent) }
@@ -305,7 +316,7 @@
     }
     text(
       fill: if icon != none { rgb("#3d4552") } else { accent.darken(10%) },
-      size: 0.78em, font: (sidebar-font.mono, sidebar-font.cjk),
+      size: 0.78em, font: (..sidebar-font.mono, ..sidebar-font.cjk),
     )[#body]
   })
 ]
@@ -331,7 +342,7 @@
   #text(size: 0.92em, weight: "bold", fill: sidebar-palette.ink)[#title]
   #if date != none [
     #linebreak()
-    #text(size: 0.78em, fill: sidebar-palette.faint, font: (sidebar-font.mono, sidebar-font.cjk))[#date]
+    #text(size: 0.78em, fill: sidebar-palette.faint, font: (..sidebar-font.mono, ..sidebar-font.cjk))[#date]
   ]
   #if subtitle != none [
     #linebreak()
@@ -385,7 +396,7 @@
     columns: (1fr, auto),
     align: (left, right),
     text(size: 1em, weight: "bold", fill: sidebar-palette.ink)[#org #h(0.5em) #text(fill: accent, weight: "medium")[#role]],
-    text(size: 0.82em, fill: sidebar-palette.faint, font: (sidebar-font.mono, sidebar-font.cjk))[#date],
+    text(size: 0.82em, fill: sidebar-palette.faint, font: (..sidebar-font.mono, ..sidebar-font.cjk))[#date],
   )
   #if summary != none [
     #v(0.2em)
@@ -422,7 +433,7 @@
 ) = {
   set document(title: "简历")
   set page(paper: "a4", margin: margin, numbering: none)
-  set text(font: (sidebar-font.main, sidebar-font.cjk), size: size, fill: sidebar-palette.ink, lang: "zh")
+  set text(font: (..sidebar-font.main, ..sidebar-font.cjk), size: size, fill: sidebar-palette.ink, lang: "zh")
   set par(justify: true, leading: 0.58em)
   show link: set text(fill: accent)
 
@@ -439,9 +450,9 @@
 // 极简风格（minimal- 前缀）：纯黑白灰，不用强调色 / 图标 / Logo / 照片，靠字重与留白做层次
 
 #let minimal-font = (
-  body: "Liberation Serif",
-  cjk: "Noto Serif CJK SC",
-  heading: "Noto Sans CJK SC",
+  body: ("Liberation Serif", ..web-only("Libertinus Serif")),
+  cjk: ("Noto Serif CJK SC", ..web-only("Noto Serif SC")),
+  heading: ("Noto Sans CJK SC", ..web-only("Noto Sans SC")),
 )
 
 #let minimal-ink = rgb("#1a1a1a")
@@ -457,12 +468,12 @@
 ) = {
   set document(title: name + " 简历")
   set page(paper: "a4", margin: margin, numbering: none)
-  set text(font: (minimal-font.body, minimal-font.cjk), size: size, fill: minimal-ink, lang: "zh")
+  set text(font: (..minimal-font.body, ..minimal-font.cjk), size: size, fill: minimal-ink, lang: "zh")
   set par(justify: false, leading: 0.65em)
 
   show heading: it => {
     v(1.1em)
-    text(font: (minimal-font.heading, minimal-font.cjk), size: 1em, weight: "bold", tracking: 2pt)[
+    text(font: (..minimal-font.heading, ..minimal-font.cjk), size: 1em, weight: "bold", tracking: 2pt)[
       #upper(it.body)
     ]
     v(0.35em)
@@ -472,7 +483,7 @@
   show link: set text(fill: minimal-ink, weight: "bold")
 
   align(center)[
-    #text(font: (minimal-font.heading, minimal-font.cjk), size: 2em, weight: "bold", tracking: 3pt)[#name]
+    #text(font: (..minimal-font.heading, ..minimal-font.cjk), size: 2em, weight: "bold", tracking: 3pt)[#name]
     #v(0.4em)
     #text(fill: minimal-gray, size: 0.92em)[
       #meta.join([  ·  ])
