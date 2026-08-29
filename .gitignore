@@ -10,3 +10,4 @@ web/node_modules/
 web/dist/
 web/public/typst-bundle.json
 web/public/wasm/
+web/public/**/*.gz

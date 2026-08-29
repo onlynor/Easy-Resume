@@ -56,6 +56,19 @@ npm run build      # 输出到 web/dist
 > 子集化，每字重 ~3–4MB），无需联网下载。想重新生成可执行 `cd web && npm run fonts`
 > （需要 `uv` 和网络）。
 
+### 加载性能优化
+
+GitHub Pages 不会对资源做内容压缩（所有文件原样传输），因此做了两件事把首载体积从
+**~47MB 降到 ~20MB**：
+
+- **gzip 预压缩**：`npm run build` 时把 wasm / 字体 / `typst-bundle.json` 全部生成 `.gz`
+  副本，`scripts/prune-dist.mjs` 再删掉未压缩版本（运行时用 `DecompressionStream` 解压，
+  并通过 gzip 魔数兼容 `vite preview` 这类会自动加 `Content-Encoding` 的服务器）。
+- **字体子集化**：CJK 字体按 GB2312 常用字子集化（见 `npm run fonts`）。
+
+实测首载传输：编译器 wasm 28MB → 10.6MB，字体 14MB → ~9MB，bundle 1MB → 0.5MB。
+访问过一遍后，GitHub Pages 的 `max-age=600` 会让后续访问命中 HTTP 缓存。
+
 ### 部署到 Cloudflare Pages
 
 Cloudflare Pages 单文件上限 **25 MiB**，而 typst 编译器 wasm 约 28MB 会超限，

@@ -1,4 +1,31 @@
 // 通用工具：下载、防抖
+
+/**
+ * 获取可能带 gzip 预压缩的资源：先试 url + '.gz'，再回退原始 url。
+ * 兼容两类服务器：
+ *  - 原样下发 .gz（GitHub Pages 等）→ 检测 gzip 魔数（1f 8b）后手动 DecompressionStream 解压
+ *  - 自动解压（vite preview 会加 Content-Encoding: gzip）→ 拿到的已是解压后的字节，直接使用
+ */
+export async function fetchMaybeGz(url: string): Promise<Uint8Array> {
+  const gzRes = await fetch(url + '.gz');
+  if (gzRes.ok) {
+    const buf = new Uint8Array(await gzRes.arrayBuffer());
+    if (buf.length >= 2 && buf[0] === 0x1f && buf[1] === 0x8b) {
+      return decompressGzip(buf);
+    }
+    return buf;
+  }
+  const raw = await fetch(url);
+  if (!raw.ok) throw new Error(`HTTP ${raw.status}: ${url}`);
+  return new Uint8Array(await raw.arrayBuffer());
+}
+
+async function decompressGzip(buf: Uint8Array): Promise<Uint8Array> {
+  const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+  const stream = new Blob([ab]).stream().pipeThrough(new DecompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
 export function downloadBytes(bytes: Uint8Array, filename: string, mime: string) {
   const blob = new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer], {
     type: mime,

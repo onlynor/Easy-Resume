@@ -2,17 +2,16 @@
 // 全部在本地运行：模板源码、字体、wasm 均来自本站静态资源，不上传任何内容。
 import { createTypstCompiler, createTypstRenderer, loadFonts } from '@myriaddreamin/typst.ts';
 import type { TypstCompiler, TypstRenderer } from '@myriaddreamin/typst.ts';
-import { FONT_URLS } from './fonts';
+import { FONT_FILES } from './fonts';
+import { fetchMaybeGz } from './utils';
 import { loadBundle } from './bundle';
 import type { TypstBundle } from './bundle';
 
 // 编译器 wasm 约 28MB，超过 Cloudflare Pages 单文件 25MiB 上限：
 // 构建时设置 VITE_TYPST_COMPILER_WASM_URL（如 jsdelivr CDN）则跳过本地打包、运行时从该 URL 加载；
-// 未设置时使用 public/wasm/ 下的本地文件（GitHub Pages / 本地开发，全本地运行）。
+// 未设置时使用 public/wasm/ 下的本地文件（gzip 预压缩，运行时解压）。
 const CDN_COMPILER_WASM_URL = (import.meta.env.VITE_TYPST_COMPILER_WASM_URL as string | undefined)?.trim();
 const localWasmUrl = (name: string) => import.meta.env.BASE_URL + 'wasm/' + name;
-const COMPILER_WASM_URL = CDN_COMPILER_WASM_URL ?? localWasmUrl('typst_ts_web_compiler_bg.wasm');
-const RENDERER_WASM_URL = localWasmUrl('typst_ts_renderer_bg.wasm');
 
 /** 编译时注入的输入，让模板切换到浏览器版字体候选表 */
 export const WEB_INPUTS = { 'easy-resume-web': '1' };
@@ -55,24 +54,20 @@ class TypstRuntime {
     const compiler = createTypstCompiler();
     await compiler.init({
       beforeBuild: [
-        // 不使用默认的远程字体资产，全部用本地打包的字体
+        // 不使用默认的远程字体资产，全部用本地打包（gzip 预压缩）的字体
         loadFonts([], { assets: false }),
-        loadFonts(FONT_URLS, {
-          fetcher: (url) => {
-            onProgress('加载字体 ' + String(url).split('/').pop(), 2, 3);
-            return fetch(url);
-          },
-        }),
+        loadFonts(await this.loadFontsWithProgress(onProgress)),
       ],
       getWrapper: () => import('@myriaddreamin/typst-ts-web-compiler'),
-      getModule: () => COMPILER_WASM_URL,
+      getModule: () =>
+        CDN_COMPILER_WASM_URL ?? fetchMaybeGz(localWasmUrl('typst_ts_web_compiler_bg.wasm')),
     });
 
     onProgress('初始化渲染器', 3, 3);
     const renderer = createTypstRenderer();
     await renderer.init({
       getWrapper: () => import('@myriaddreamin/typst-ts-renderer'),
-      getModule: () => RENDERER_WASM_URL,
+      getModule: () => fetchMaybeGz(localWasmUrl('typst_ts_renderer_bg.wasm')),
     });
 
     // 把打包的模板/图标源码灌进编译器虚拟文件系统
@@ -86,6 +81,18 @@ class TypstRuntime {
 
     this.compiler = compiler;
     this.renderer = renderer;
+  }
+
+  /** 逐个下载（gzip 预压缩）并解压字体，返回 Uint8Array 列表 */
+  private async loadFontsWithProgress(onProgress: ProgressFn): Promise<Uint8Array[]> {
+    const base = import.meta.env.BASE_URL;
+    const total = FONT_FILES.length;
+    const fonts: Uint8Array[] = [];
+    for (let i = 0; i < total; i++) {
+      onProgress(`加载字体 ${i + 1}/${total} ${FONT_FILES[i]}`, 2, 3);
+      fonts.push(await fetchMaybeGz(base + 'fonts/' + FONT_FILES[i]));
+    }
+    return fonts;
   }
 
   /** 覆盖某个源文件（主文件在编译前调用） */

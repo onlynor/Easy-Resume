@@ -5,9 +5,10 @@ export interface TypstBundle {
   binary: Record<string, string>; // base64
 }
 
+import { fetchMaybeGz } from './utils';
+
 export async function loadBundle(): Promise<TypstBundle> {
   const url = import.meta.env.BASE_URL + 'typst-bundle.json';
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`加载 typst-bundle.json 失败：HTTP ${res.status}`);
-  return (await res.json()) as TypstBundle;
+  const bytes = await fetchMaybeGz(url);
+  return JSON.parse(new TextDecoder().decode(bytes)) as TypstBundle;
 }

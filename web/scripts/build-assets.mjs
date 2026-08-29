@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync, rmSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const webRoot = join(here, '..');
@@ -64,7 +65,8 @@ const wasmFiles = [
 for (const [rel, name] of wasmFiles) {
   const dest = join(wasmOutDir, name);
   if (name === 'typst_ts_web_compiler_bg.wasm' && process.env.VITE_TYPST_COMPILER_WASM_URL) {
-    if (existsSync(dest)) rmSync(dest);
+    // 同时清掉上一次本地构建可能残留的 .gz，避免 stale 文件进入产物
+    for (const f of [dest, dest + '.gz']) if (existsSync(f)) rmSync(f);
     console.log('[assets] 跳过编译器 wasm（VITE_TYPST_COMPILER_WASM_URL 已设置，运行时从 CDN 加载）');
     continue;
   }
@@ -73,6 +75,32 @@ for (const [rel, name] of wasmFiles) {
   writeFileSync(dest, readFileSync(src));
   console.log(`[assets] wasm → public/wasm/${name}`);
 }
+
+// ---- gzip 预压缩 ----
+// GitHub Pages 不做内容压缩，所有资源裸传；这里把大文件生成 .gz 副本，
+// 运行时用 DecompressionStream 解压，首载体积约从 47MB 降到 21MB。
+const gzTargets = [
+  join(webRoot, 'public', 'typst-bundle.json'),
+  ...wasmFiles
+    .filter(([, name]) => (name === 'typst_ts_web_compiler_bg.wasm' ? !process.env.VITE_TYPST_COMPILER_WASM_URL : true))
+    .map(([, name]) => join(wasmOutDir, name)),
+  ...readdirSync(join(webRoot, 'public', 'fonts'))
+    .filter((f) => /\.(otf|ttf)$/.test(f))
+    .map((f) => join(webRoot, 'public', 'fonts', f)),
+];
+let gzBytes = 0;
+let gzSaved = 0;
+for (const src of gzTargets) {
+  if (!existsSync(src)) continue;
+  const raw = readFileSync(src);
+  const gz = gzipSync(raw, { level: 9 });
+  writeFileSync(src + '.gz', gz);
+  gzBytes += gz.length;
+  gzSaved += raw.length - gz.length;
+}
+console.log(
+  `[assets] gzip 预压缩 ${gzTargets.filter((s) => existsSync(s)).length} 个文件 → .gz（共 ${(gzBytes / 1048576).toFixed(1)} MB，省 ${(gzSaved / 1048576).toFixed(1)} MB）`,
+);
 
 const bytes = statSync(outFile).size;
 console.log(
