@@ -163,7 +163,9 @@ export default function ParamsPanel({ template, src, onChange }: Props) {
                 try {
                   const dataUrl = await fileToPngDataUrl(f);
                   setPhoto(dataUrl);
-                  runtime.setShadow('photo.png', dataUrlToBytes(dataUrl));
+                  // image(photo) 在 code/template.typ 的 resume() 内执行，
+                  // 相对路径按 template.typ 所在目录 /code/ 解析，shadow 必须存到 /code/photo.png
+                  runtime.setShadow('code/photo.png', dataUrlToBytes(dataUrl));
                   onChange(setParam(src, 'photo', '"photo.png"'));
                 } catch (err) {
                   alert(`照片解析失败：${(err as Error).message}`);
@@ -179,7 +181,7 @@ export default function ParamsPanel({ template, src, onChange }: Props) {
             {params.photo && (
               <button
                 onClick={() => {
-                  runtime.clearShadow('photo.png');
+                  runtime.clearShadow('code/photo.png');
                   setPhoto(null);
                   onChange(removeParam(src, 'photo'));
                 }}
