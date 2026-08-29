@@ -1,0 +1,52 @@
+# 构建 web/ 并部署到 GitHub Pages（onlynor.github.io/easy-resume）
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'code/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      # 字体（public/fonts/）与 typst-bundle.json 已包含在仓库 / 由 assets 脚本生成，
+      # 不需要联网下载字体。
+      - name: Build
+        working-directory: web
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

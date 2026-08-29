@@ -2,3 +2,10 @@
 !resume.pdf
 !code/examples/**/*.pdf
 *.png
+!code/icons/ui/figure.png
+tmp/
+node_modules/
+dist/
+web/node_modules/
+web/dist/
+web/public/typst-bundle.json

@@ -1,0 +1,40 @@
+{
+  "name": "easy-resume-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Easy Resume 在线简历编辑器：浏览器内编译 Typst，导出 PDF。",
+  "scripts": {
+    "assets": "node scripts/build-assets.mjs",
+    "fonts": "node scripts/build-fonts.mjs",
+    "dev": "npm run assets && vite",
+    "build": "npm run assets && tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --force"
+  },
+  "dependencies": {
+    "@myriaddreamin/typst-ts-renderer": "0.7.0",
+    "@myriaddreamin/typst-ts-web-compiler": "0.7.0",
+    "@myriaddreamin/typst.ts": "0.7.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.11.0",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/search": "^6.7.1",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.9",
+    "@lezer/highlight": "^1.2.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "subset-font": "^2.6.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}
