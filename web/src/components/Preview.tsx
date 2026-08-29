@@ -34,6 +34,10 @@ function fitContainer(container: HTMLElement) {
     if (textLayer) {
       textLayer.style.width = `${width}px`;
       textLayer.style.height = `${canvas.height * scale}px`;
+      // 语义层（文字选择覆盖层）的坐标缩放变量：px-per-pt = width / (canvas.width / pixelPerPt)
+      const ppt = (width * 2.5) / canvas.width;
+      textLayer.style.setProperty('--data-text-width', `${ppt}px`);
+      textLayer.style.setProperty('--data-text-height', `${ppt}px`);
     }
   });
 }

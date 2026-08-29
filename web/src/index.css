@@ -23,3 +23,71 @@ body {
 .cm-scroller {
   height: 100%;
 }
+
+/*
+ * typst.ts 渲染器语义文本层（选中文字用的透明覆盖层）官方样式，取自
+ * https://github.com/Myriad-Dreamin/typst.ts → packages/typst.ts/examples/typst.ts.css
+ *
+ * 不加载这些规则时，语义层会退化成普通流式文本：PDF 下方多出一大段简历文字
+ * （内容越多越明显，侧栏模板必现）。加上后它恢复为绝对定位、文字透明，
+ * 仅用于文字选择与可访问性，视觉上只剩 canvas 渲染的 PDF。
+ */
+.typst-html-semantics {
+  position: absolute;
+  z-index: 2;
+  color: transparent;
+  font-family: monospace;
+  white-space: pre;
+}
+
+.typst-html-semantics span {
+  color: transparent;
+  font-family: monospace;
+  transform-origin: left top;
+  position: absolute;
+  display: inline-block;
+  left: 0;
+  top: 0;
+}
+
+.typst-content-hint {
+  position: absolute;
+  display: inline-block;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.typst-html-semantics a {
+  position: absolute;
+  display: inline-block;
+}
+
+.typst-content-group {
+  pointer-events: visible;
+}
+
+.typst-content-fallback {
+  color: transparent;
+  background: transparent;
+}
+
+.typst-html-semantics span::-moz-selection {
+  color: transparent;
+  background: #7db9dea0;
+}
+
+.typst-html-semantics span::selection {
+  color: transparent;
+  background: #7db9dea0;
+}
+
+.typst-html-semantics *::-moz-selection {
+  color: transparent;
+  background: transparent;
+}
+
+.typst-html-semantics *::selection {
+  color: transparent;
+  background: transparent;
+}
