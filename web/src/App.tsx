@@ -79,7 +79,7 @@ export default function App() {
         console.error(err);
         setStatus({
           status: 'error',
-          messages: [err instanceof Error ? err.message : String(err)],
+          messages: [{ text: err instanceof Error ? err.message : String(err), isError: true }],
         });
       }
     }, 500);

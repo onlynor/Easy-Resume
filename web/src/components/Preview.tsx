@@ -1,9 +1,10 @@
 // 预览区：容纳 typst 渲染出的画布，并展示编译状态/诊断
 import { forwardRef } from 'react';
+import type { DiagMessage } from '../lib/runtime';
 
 export interface CompileStatus {
   status: 'idle' | 'compiling' | 'ok' | 'error';
-  messages: string[];
+  messages: DiagMessage[];
 }
 
 interface Props {
@@ -12,8 +13,8 @@ interface Props {
 }
 
 const Preview = forwardRef<HTMLDivElement, Props>(function Preview({ status, containerRef }, _ref) {
-  const errors = status.messages.filter((m) => m.startsWith('error'));
-  const warnings = status.messages.filter((m) => !m.startsWith('error'));
+  const errors = status.messages.filter((m) => m.isError);
+  const warnings = status.messages.filter((m) => !m.isError);
 
   return (
     <div className="relative h-full w-full bg-slate-200/70">
@@ -43,7 +44,7 @@ const Preview = forwardRef<HTMLDivElement, Props>(function Preview({ status, con
           </p>
           <ul className="space-y-1.5 font-mono text-xs text-red-800">
             {errors.map((e, i) => (
-              <li key={i} className="whitespace-pre-wrap break-all">{e}</li>
+              <li key={i} className="whitespace-pre-wrap break-all">{e.text}</li>
             ))}
           </ul>
         </div>
@@ -52,7 +53,7 @@ const Preview = forwardRef<HTMLDivElement, Props>(function Preview({ status, con
       {warnings.length > 0 && (
         <div className="absolute inset-x-0 top-0 border-b border-amber-200 bg-amber-50/90 p-2 text-xs text-amber-800">
           {warnings.map((w, i) => (
-            <p key={i} className="whitespace-pre-wrap break-all">{w}</p>
+            <p key={i} className="whitespace-pre-wrap break-all">{w.text}</p>
           ))}
         </div>
       )}

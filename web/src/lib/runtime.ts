@@ -11,14 +11,19 @@ import type { TypstBundle } from './bundle';
 /** 编译时注入的输入，让模板切换到浏览器版字体候选表 */
 export const WEB_INPUTS = { 'easy-resume-web': '1' };
 
+export interface DiagMessage {
+  text: string;
+  isError: boolean;
+}
+
 export interface CompileOutcome {
   ok: boolean;
   /** vector 产物（预览用），失败时为 undefined */
   artifact?: Uint8Array;
   /** pdf 产物（导出用），失败时为 undefined */
   pdf?: Uint8Array;
-  /** 人类可读的诊断信息（错误 / 警告） */
-  messages: string[];
+  /** 诊断信息（错误 / 警告） */
+  messages: DiagMessage[];
 }
 
 type ProgressFn = (stage: string, done: number, total: number) => void;
@@ -158,18 +163,21 @@ interface DiagLike {
   range?: string;
 }
 
-function extractMessages(res: { diagnostics?: unknown[] }): string[] {
+function extractMessages(res: { diagnostics?: unknown[] }): DiagMessage[] {
   const raw = res.diagnostics ?? [];
   return raw.map((d) => {
     const x = d as DiagLike;
-    if (typeof d === 'string') return d;
-    if (x?.message) return x.severity === 'error' ? x.message : `${x.severity}: ${x.message}`;
-    return String(d);
+    if (typeof d === 'string') return { text: d, isError: d.startsWith('error') };
+    if (x?.message) {
+      const isError = x.severity === 'error' || x.message.startsWith('error');
+      return { text: x.message, isError };
+    }
+    return { text: String(d), isError: false };
   });
 }
 
-function hasErrors(messages: string[]): boolean {
-  return messages.some((m) => m.startsWith('error'));
+function hasErrors(messages: DiagMessage[]): boolean {
+  return messages.some((m) => m.isError);
 }
 
 function vpath(path: string): string {
