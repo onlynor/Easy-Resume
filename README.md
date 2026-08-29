@@ -56,6 +56,25 @@ npm run build      # 输出到 web/dist
 > 子集化，每字重 ~3–4MB），无需联网下载。想重新生成可执行 `cd web && npm run fonts`
 > （需要 `uv` 和网络）。
 
+### 部署到 Cloudflare Pages
+
+Cloudflare Pages 单文件上限 **25 MiB**，而 typst 编译器 wasm 约 28MB 会超限，
+因此构建时通过环境变量 `VITE_TYPST_COMPILER_WASM_URL` 让编译器 wasm 从
+[jsdelivr CDN](https://cdn.jsdelivr.net/npm/@myriaddreamin/typst-ts-web-compiler@0.7.0/pkg/typst_ts_web_compiler_bg.wasm) 加载
+（构建产物不再包含这个大文件，最大单文件约 4MB）。
+
+Cloudflare Pages 项目设置：
+
+- **Build configuration**
+  - Root directory: `web`
+  - Build command: `npm run build`
+  - Build output directory: `dist`
+- **Environment variables**
+  - `VITE_TYPST_COMPILER_WASM_URL=https://cdn.jsdelivr.net/npm/@myriaddreamin/typst-ts-web-compiler@0.7.0/pkg/typst_ts_web_compiler_bg.wasm`
+
+不设置该变量时（GitHub Pages / 本地开发），wasm 照旧构建进 `public/wasm/` 本地加载，
+保持全本地运行。
+
 ## 其他风格与示例
 
 `code/` 目录包含完整设计系统和更多示例：

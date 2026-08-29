@@ -2,11 +2,17 @@
 // 全部在本地运行：模板源码、字体、wasm 均来自本站静态资源，不上传任何内容。
 import { createTypstCompiler, createTypstRenderer, loadFonts } from '@myriaddreamin/typst.ts';
 import type { TypstCompiler, TypstRenderer } from '@myriaddreamin/typst.ts';
-import compilerWasmUrl from '@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm?url';
-import rendererWasmUrl from '@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url';
 import { FONT_URLS } from './fonts';
 import { loadBundle } from './bundle';
 import type { TypstBundle } from './bundle';
+
+// 编译器 wasm 约 28MB，超过 Cloudflare Pages 单文件 25MiB 上限：
+// 构建时设置 VITE_TYPST_COMPILER_WASM_URL（如 jsdelivr CDN）则跳过本地打包、运行时从该 URL 加载；
+// 未设置时使用 public/wasm/ 下的本地文件（GitHub Pages / 本地开发，全本地运行）。
+const CDN_COMPILER_WASM_URL = (import.meta.env.VITE_TYPST_COMPILER_WASM_URL as string | undefined)?.trim();
+const localWasmUrl = (name: string) => import.meta.env.BASE_URL + 'wasm/' + name;
+const COMPILER_WASM_URL = CDN_COMPILER_WASM_URL ?? localWasmUrl('typst_ts_web_compiler_bg.wasm');
+const RENDERER_WASM_URL = localWasmUrl('typst_ts_renderer_bg.wasm');
 
 /** 编译时注入的输入，让模板切换到浏览器版字体候选表 */
 export const WEB_INPUTS = { 'easy-resume-web': '1' };
@@ -59,14 +65,14 @@ class TypstRuntime {
         }),
       ],
       getWrapper: () => import('@myriaddreamin/typst-ts-web-compiler'),
-      getModule: () => compilerWasmUrl,
+      getModule: () => COMPILER_WASM_URL,
     });
 
     onProgress('初始化渲染器', 3, 3);
     const renderer = createTypstRenderer();
     await renderer.init({
       getWrapper: () => import('@myriaddreamin/typst-ts-renderer'),
-      getModule: () => rendererWasmUrl,
+      getModule: () => RENDERER_WASM_URL,
     });
 
     // 把打包的模板/图标源码灌进编译器虚拟文件系统
