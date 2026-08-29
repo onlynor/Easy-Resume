@@ -24,6 +24,24 @@ export default function App() {
   const previewRef = useRef<HTMLDivElement | null>(null);
   const compileSeq = useRef(0);
 
+  // 左侧编辑区宽度（桌面端可拖动分隔栏调整）
+  const [leftWidth, setLeftWidth] = useState(440);
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const onDividerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startWidth: leftWidth };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onDividerPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const next = Math.min(760, Math.max(300, d.startWidth + (e.clientX - d.startX)));
+    setLeftWidth(next);
+  };
+  const onDividerPointerUp = () => {
+    dragRef.current = null;
+  };
+
   const template = getTemplate(templateId);
 
   // 初始化运行时（字体 + wasm + 模板资源，全部本地）
@@ -120,7 +138,10 @@ export default function App() {
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         {/* 左侧编辑区 */}
-        <aside className="flex w-full shrink-0 flex-col border-r border-slate-200 bg-white md:w-[440px]">
+        <aside
+          style={{ '--left-w': `${leftWidth}px` } as React.CSSProperties}
+          className="flex w-full shrink-0 flex-col bg-white md:w-(--left-w)"
+        >
           <div className="flex shrink-0 border-b border-slate-200 text-sm">
             {(
               [
@@ -151,6 +172,16 @@ export default function App() {
             编辑会同步更新源码与预览，导出 PDF 与预览一致
           </div>
         </aside>
+
+        {/* 可拖动分隔栏（桌面端） */}
+        <div
+          className="hidden w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-slate-200 transition-colors hover:bg-blue-400 active:bg-blue-500 md:block"
+          onPointerDown={onDividerPointerDown}
+          onPointerMove={onDividerPointerMove}
+          onPointerUp={onDividerPointerUp}
+          onPointerCancel={onDividerPointerUp}
+          title="拖动调整左右宽度"
+        />
 
         {/* 右侧预览 */}
         <main className="min-h-0 flex-1">
